@@ -11,14 +11,14 @@
 <body>
 
 <div style="font-family: 'Dancing Script', cursive;">
-    Hi {{ $name }},
+    Hi {{ $data['name'] }} ,
     <br>
     Thank you for creating an account with us at Zlocan. Verify your account to complete the registration!
     <br>
     Please click on the link below or copy it into the address bar of your browser to confirm your email address:
     <br>
 
-    <a href="{{ url('user/verify', $verification_code)}}">Confirm my email address </a>
+    <a href="{{ url('user/verify', $data['verification_code']) }}">Confirm my email address </a>
 
     <br/>
 </div>

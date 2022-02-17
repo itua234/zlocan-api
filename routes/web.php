@@ -18,15 +18,6 @@ Route::get('/', function () {
 });
 
 
-Route::get('user/verify/{verification_code}', [MainController::class, 'verifyUser']);
-
-Route::get('user/delete/{id}', [MainController::class, 'delete']);
-
-Route::get('user/{id}', [MainController::class, 'userDetails']);
-
-Route::get('password/reset/', [MainController::class, 'password_recover']);
-
-
 
 
 

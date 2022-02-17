@@ -29,9 +29,13 @@ Route::get('password/reset/', [MainController::class, 'password_recover']);
 
 Route::get('user/delete/{id}', [MainController::class, 'delete']);
 
-Route::get('user/{id}', [MainController::class, 'userDetails']);
+//Route::get('user/{id}', [MainController::class, 'userDetails']);
 
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
+});
+
+Route::middleware("auth:sanctum")->group(function(){
+    Route::get('user/{id}', [MainController::class, 'userDetails']);
 });

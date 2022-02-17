@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\verifyMail;
 use App\Models\User;      //Initializes model
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Hash;      //Password Hashing
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 use Illuminate\Http\Request;
 
@@ -14,19 +16,26 @@ class MainController extends Controller
 {
     public function register(Request $request){
         //Validate requests
-        $fields = $request->validate([
-            'name' => 'required',
+        $fields = [
+            'name' => 'required|alpha',
             'email' => 'required|email|unique:users',
             'password' => 'required|min:5|max:12'
-        ]);
-        $email = $fields['email'];
-        $name = $fields['name'];
+        ];
+        $validator = Validator::make($request->all(), $fields);
+        if($validator->fails()){
+            return response()->json([
+                'success'=> false, 
+                'errors' => $validator->getMessageBag()->toArray()
+            ], 422);
+        }
+        $email = $request->email;
+        $name = $request->name;
 
         //Insert data into database
         $user = User::create([
-            'name' => $fields["name"],
-            'email' => $fields["email"],
-            'password' => Hash::make($fields["password"])
+            'name' => $name,
+            'email' => $email,
+            'password' => Hash::make($request->password)
         ]);
 
         $verification_code = mt_rand(100000, 999999);
@@ -35,13 +44,13 @@ class MainController extends Controller
             'token'=>$verification_code
         ]);
         $subject = "Please verify your email address.";
-        Mail::send('email.verify', ['name' => $fields['name'], 'verification_code' => $verification_code],
-            function($mail) use ($email, $name, $subject){
-                $mail->from(getenv('MAIL_FROM_ADDRESS'), "sivatech234@gmail.com");
-                $mail->to($email, $name);
-                $mail->subject($subject);
-            }
-        );
+
+        $data = [
+            'name' => $name,
+            'verification_code' => $verification_code
+        ];
+        Mail::to($email)
+            ->send(new verifyMail($data));
 
         $token = $user->createToken('softech')->plainTextToken;
         return response()->json([
@@ -53,13 +62,21 @@ class MainController extends Controller
 
     public function login(Request $request){
         //Validate requests
-        $fields = $request->validate([
-            'email' => 'required|string',
-            'password' => 'required|string'
-        ]);
+        $fields = [
+            'email' => 'required|email',
+            'password' => 'required'
+        ];
+        $validator = Validator::make($request->all(), $fields);
+        if($validator->fails()){
+            return response()->json([
+                'success'=> false, 
+                'errors' => $validator->getMessageBag()->toArray()
+            ], 422);
+        }
+        
 
-        $user = User::where("email", $fields["email"])->first();
-        if(!$user || !Hash::check($fields["password"], $user->password)){
+        $user = User::where("email", $request->email)->first();
+        if(!$user || !Hash::check($request->password, $user->password)){
             return response([
                 'message' => "Wrong credentials"
             ],401);
@@ -71,7 +88,7 @@ class MainController extends Controller
             'token' => $token
         ],200);
     }
-
+    
 
     public function verifyUser($verification_code){
         $check = DB::table('user_verification')->where('token', $verification_code)->first();
@@ -129,8 +146,8 @@ class MainController extends Controller
         $subject = "Password reset token.";
         try{
             $reset_token = mt_rand(100000,999999);
-            $timestamp = Carbon::now();
-            DB::table('password_resets')->insert(['email'=>$email, 'token'=>$reset_token,'created_at'=>$timestamp]);
+            $timestamp = Carbon::now()->addHours(6);
+            DB::table('password_resets')->insert(['email'=>$email, 'token'=>$reset_token, 'created_at'=>$timestamp]);
             Mail::send('email.password_recovery', ['email' => $email, 'reset_token' => $reset_token],
             function($mail) use ($email, $subject, $reset_token){
                 $mail->from(getenv('MAIL_FROM_ADDRESS'), "sivatech234@gmail.com");
