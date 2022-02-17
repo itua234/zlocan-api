@@ -16,7 +16,7 @@
     Please click on the link below to reset your password!
     <br>
 
-    <a href="{{ url('password/reset', ['email' => $email, 'token' = $reset_token]) }}"> Reset password </a>
+    <a href="{{ url('password/reset', ['email' => $email, 'token' => $reset_token]) }}"> Reset password </a>
 
     <br/>
 </div>

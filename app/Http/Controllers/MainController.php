@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Mail\verifyMail;
 use App\Models\User;      //Initializes model
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;      //Password Hashing
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\DB;
@@ -49,8 +50,8 @@ class MainController extends Controller
             'name' => $name,
             'verification_code' => $verification_code
         ];
-        Mail::to($email)
-            ->send(new verifyMail($data));
+        //Mail::to($email)
+            //->send(new verifyMail($data));
 
         $token = $user->createToken('softech')->plainTextToken;
         return response()->json([
@@ -129,11 +130,25 @@ class MainController extends Controller
     public function userDetails($id){
         $user_id = $id;
         $user = User::find($user_id);
+        if(!$user):
+            return response()->json([
+                'success'=> false,
+                'message' => "user does not exist"
+            ]);
+        endif;
 
         return response()->json([
             'success'=> true,
             'user' => $user
         ]);
+    }
+
+    public function logout(){
+        auth()->user()->tokens()->delete();
+        return [
+            "success" => true,
+            "message" => "user logout"
+        ];
     }
 
     public function recover_password(Request $request){
@@ -148,12 +163,12 @@ class MainController extends Controller
             $reset_token = mt_rand(100000,999999);
             $timestamp = Carbon::now()->addHours(6);
             DB::table('password_resets')->insert(['email'=>$email, 'token'=>$reset_token, 'created_at'=>$timestamp]);
-            Mail::send('email.password_recovery', ['email' => $email, 'reset_token' => $reset_token],
+            /*Mail::send('email.password_recovery', ['email' => $email, 'reset_token' => $reset_token],
             function($mail) use ($email, $subject, $reset_token){
                 $mail->from(getenv('MAIL_FROM_ADDRESS'), "sivatech234@gmail.com");
                 $mail->to($email);
                 $mail->subject($subject);
-            });
+            });*/
         }catch(\Exception $e){
             //Return with error
             $error_message = $e->getMessage();
